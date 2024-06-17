@@ -1,0 +1,14 @@
+/praser/*.pyc
+/.idea
+*.log
+/log
+*.pid
+/venv
+/plug/__pycache__
+*.pyc
+smaiuac_logs
+/*.ini
+job_store
+!/logs/
+/logs
+/files/cache
