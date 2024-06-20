@@ -1,5 +1,6 @@
 /praser/*.pyc
 /.idea
+.idea
 *.log
 /log
 *.pid

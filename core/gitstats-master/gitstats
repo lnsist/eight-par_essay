@@ -304,7 +304,7 @@ class GitDataCollector(DataCollector):
     def collect(self, dir):
         DataCollector.collect(self, dir)
 
-        if IS_ME is False:
+        if IS_SELF is False:
             self.total_authors += int(getpipeoutput(['git shortlog -s %s' % getlogrange(), 'wc -l']))
         else:
             self.total_authors = 1
@@ -319,7 +319,7 @@ class GitDataCollector(DataCollector):
 
             tag = tag.replace('refs/tags/', '')
             cmd_list = ['git log "%s" --pretty=format:"%%at %%aN" -n 1' % hash]
-            if IS_ME is True:
+            if IS_SELF is True:
                 cmd_list[0] += ' --author=xiezhenheng'
             output = getpipeoutput(cmd_list)
             if len(output) > 0:
@@ -350,7 +350,7 @@ class GitDataCollector(DataCollector):
                 commits = int(parts[1])
                 author = parts[2]
                 author = _check_author(author)
-                if IS_ME is True and author != 'XieZhenHeng':
+                if IS_SELF is True and author != 'XieZhenHeng':
                     continue
                 self.tags[tag]['commits'] += commits
                 self.tags[tag]['authors'][author] = commits
@@ -358,7 +358,7 @@ class GitDataCollector(DataCollector):
         # Collect revision statistics
         # Outputs "<stamp> <date> <time> <timezone> <author> '<' <mail> '>'"
         cmd_list = ['git rev-list --pretty=format:"%%at %%ai %%aN <%%aE>" %s' % getlogrange('HEAD'), 'grep -v ^commit']
-        if IS_ME is True:
+        if IS_SELF is True:
             cmd_list[0] += ' --author=xiezhenheng'
         lines = getpipeoutput(cmd_list).split(
             '\n')
@@ -373,7 +373,7 @@ class GitDataCollector(DataCollector):
             author, mail = parts[4].split('<', 1)
             author = author.rstrip()
             author = _check_author(author)
-            if IS_ME is True and author != 'XieZhenHeng':
+            if IS_SELF is True and author != 'XieZhenHeng':
                 continue
             mail = mail.rstrip('>')
             domain = '?'
@@ -423,10 +423,6 @@ class GitDataCollector(DataCollector):
             if self.activity_by_year_week_peak < self.activity_by_year_week[yyw]:
                 self.activity_by_year_week_peak = self.activity_by_year_week[yyw]
 
-            # author = _check_author(author)
-            # if IS_ME is True and author != 'XieZhenHeng':
-            #     continue
-            # author stats
             if author not in self.authors:
                 self.authors[author] = {}
             # commits, note again that commits may be in any date order because of cherry-picking and patches
@@ -478,7 +474,7 @@ class GitDataCollector(DataCollector):
             'git rev-list --pretty=format:"%%at %%T" %s' % getlogrange('HEAD'),
             'grep -v ^commit',
         ]
-        if IS_ME is True:
+        if IS_SELF is True:
             cmd_list[0] += ' --author=xiezhenheng'
 
         revlines = getpipeoutput(cmd_list).strip().split('\n')
@@ -585,7 +581,7 @@ class GitDataCollector(DataCollector):
         if conf['linear_linestats']:
             extra = '--first-parent -m'
         cmd_list = ['git log --shortstat %s --pretty=format:"%%at %%aN" %s' % (extra, getlogrange('HEAD'))]
-        if IS_ME is True:
+        if IS_SELF is True:
             cmd_list[0] += ' --author=xiezhenheng'
         lines = getpipeoutput(cmd_list).split('\n')
         lines.reverse()
@@ -604,7 +600,7 @@ class GitDataCollector(DataCollector):
                 if pos != -1:
                     try:
                         (stamp, author) = (int(line[:pos]), _check_author(line[pos + 1:]))
-                        if IS_ME is True and author != 'XieZhenHeng':
+                        if IS_SELF is True and author != 'XieZhenHeng':
                             continue
                         self.changes_by_date[stamp] = {'files': files, 'ins': inserted, 'del': deleted,
                                                        'lines': total_lines}
@@ -648,7 +644,7 @@ class GitDataCollector(DataCollector):
         # (we need to walk through every commit to know who
         # committed what, not just through mainline)
         cmd_list = ['git log --shortstat --date-order --pretty=format:"%%at %%aN" %s' % (getlogrange('HEAD'))]
-        if IS_ME is True:
+        if IS_SELF is True:
             cmd_list[0] += ' --author=xiezhenheng'
         lines = getpipeoutput(cmd_list).split('\n')
         lines.reverse()
@@ -668,7 +664,7 @@ class GitDataCollector(DataCollector):
                     try:
                         oldstamp = stamp
                         (stamp, author) = (int(line[:pos]), _check_author(line[pos + 1:]))
-                        if IS_ME is True and author != 'XieZhenHeng':
+                        if IS_SELF is True and author != 'XieZhenHeng':
                             continue
                         if oldstamp > stamp:
                             # clock skew, keep old timestamp to avoid having ugly graph
@@ -682,9 +678,9 @@ class GitDataCollector(DataCollector):
                             self.changes_by_date_by_author[stamp] = {}
                         if author not in self.changes_by_date_by_author[stamp]:
                             self.changes_by_date_by_author[stamp][author] = {}
-                        self.changes_by_date_by_author[stamp][author]['lines_added'] = self.authors[author][
-                            'lines_added']
                         self.changes_by_date_by_author[stamp][author]['commits'] = self.authors[author]['commits']
+                        self.changes_by_date_by_author[stamp][author]['lines_added'] = self.authors[author]['lines_added']
+                        self.changes_by_date_by_author[stamp][author]['lines_removed'] = self.authors[author]['lines_removed']
                         files, inserted, deleted = 0, 0, 0
                     except ValueError:
                         print('Warning: unexpected line "%s"' % line)
@@ -775,7 +771,7 @@ class GitDataCollector(DataCollector):
 
     def revToDate(self, rev):
         cmd_list = ['git log --pretty=format:%%at "%s" -n 1' % rev]
-        if IS_ME is True:
+        if IS_SELF is True:
             cmd_list[0] += ' --author=xiezhenheng'
         stamp = int(getpipeoutput(cmd_list))
         return datetime.datetime.fromtimestamp(stamp).strftime('%Y-%m-%d')
@@ -820,7 +816,7 @@ class HTMLReportCreator(ReportCreator):
                 print('Warning: "%s" not found, so not copied (searched: %s)' % (file, basedirs))
 
         f = open(path + "/index.html", 'w')
-        format = '%Y-%m-%d %H:%M:%S'
+        temp_format = '%Y-%m-%d %H:%M:%S'
         self.printHeader(f)
 
         f.write('<h1>GitStats - %s</h1>' % data.projectname)
@@ -829,21 +825,28 @@ class HTMLReportCreator(ReportCreator):
         write_str = '<dl>'
         write_str += '<dt>Project name</dt><dd>%s</dd>' % (data.projectname)
         write_str += '<dt>Generated</dt><dd>%s (in %d seconds)</dd>' % (
-            datetime.datetime.now().strftime(format),
+            datetime.datetime.now().strftime(temp_format),
             time.time() - data.getStampCreated()
         )
         write_str += '<dt>Generator</dt><dd><a href="http://gitstats.sourceforge.net/">GitStats</a> (version %s), %s, %s</dd>' % (
             getversion(), getgitversion(), getgnuplotversion()
         )
         write_str += '<dt>Report Period</dt><dd>%s to %s</dd>' % (
-            data.getFirstCommitDate().strftime(format),
-            data.getLastCommitDate().strftime(format)
+            data.getFirstCommitDate().strftime(temp_format),
+            data.getLastCommitDate().strftime(temp_format)
         )
-        write_str += '<dt>Age</dt><dd>%d days, %d active days (%3.2f%%)</dd>' % (
-            data.getCommitDeltaDays(), len(data.getActiveDays()),
-            (100.0 * len(data.getActiveDays()) / data.getCommitDeltaDays())
+        commit_delta_days = round(data.getCommitDeltaDays(), 2)
+        commit_delta_years = round(commit_delta_days / 365.0, 2)
+        working_days = commit_delta_years * 250
+        active_days = len(data.getActiveDays())
+        write_str += '<dt>Age</dt><dd>{} days, {} years, {} working days, {} active days ({}%)</dd>'.format(
+            format(commit_delta_days, ','),
+            format(commit_delta_years, ','),
+            format(working_days, ','),
+            active_days,
+            round(100.0 * active_days / working_days, 2),
         )
-        write_str += '<dt>Total Files</dt><dd>%s</dd>' % data.getTotalFiles()
+        # write_str += '<dt>Total Files</dt><dd>%s</dd>' % data.getTotalFiles()
         write_str += '<dt>Total Lines of Code</dt><dd>%s (%d added, %d removed)</dd>' % (
             data.getTotalLOC(), data.total_lines_added, data.total_lines_removed
         )
@@ -856,7 +859,6 @@ class HTMLReportCreator(ReportCreator):
         )
         write_str += '</dl>'
         f.write(write_str)
-        _general_html(projectname=data.projectname, content=write_str)
         # f.write('<dl>')
         # f.write('<dt>Project name</dt><dd>%s</dd>' % (data.projectname))
         # f.write('<dt>Generated</dt><dd>%s (in %d seconds)</dd>' % (
@@ -897,11 +899,13 @@ class HTMLReportCreator(ReportCreator):
         WEEKS = 32
         f.write(html_header(2, 'Weekly activity'))
         f.write('<p>Last %d weeks</p>' % WEEKS)
-        _set_json(
-            file_name='test_json',
-            key='activity_by_year_week',
-            value=data.activity_by_year_week,
-        )
+        if IS_SELF is True:
+            _set_json(
+                file_name='test_json',
+                project_name=data.projectname,
+                key='activity_by_year_week',
+                value=data.activity_by_year_week,
+            )
 
         # generate weeks to show (previous N weeks from now)
         now = datetime.datetime.now()
@@ -923,23 +927,25 @@ class HTMLReportCreator(ReportCreator):
                 percentage = float(data.activity_by_year_week[weeks[i]]) / data.activity_by_year_week_peak
             height = max(1, int(200 * percentage))
             f.write(
-                '<td style="text-align: center; vertical-align: bottom">%d<div style="display: block; background-color: red; width: 20px; height: %dpx"></div></td>' % (
+                '<td style="text-align: center; vertical-align: bottom">%d<div style="margin:0 auto; display: block; background-color: red; width: 20px; height: %dpx"></div></td>' % (
                     commits, height))
 
         # bottom row: year/week
         f.write('</tr><tr>')
         for i in range(0, WEEKS):
-            f.write('<td>%s</td>' % (WEEKS - i))
+            f.write('<td>%s</td>' % (weeks[i]))
         f.write('</tr></table>')
 
         # Hour of Day
         f.write(html_header(2, 'Hour of Day'))
         hour_of_day = data.getActivityByHourOfDay()
-        _set_json(
-            file_name='test_json',
-            key='hour_of_day',
-            value=hour_of_day,
-        )
+        if IS_SELF is True:
+            _set_json(
+                file_name='test_json',
+                project_name=data.projectname,
+                key='hour_of_day',
+                value=hour_of_day,
+            )
         f.write('<table><tr><th>Hour</th>')
         for i in range(0, 24):
             f.write('<th>%d</th>' % i)
@@ -956,11 +962,13 @@ class HTMLReportCreator(ReportCreator):
         fp.close()
         f.write('</tr>\n<tr><th>%</th>')
         totalcommits = data.getTotalCommits()
-        _set_json(
-            file_name='test_json',
-            key='totalcommits',
-            value=totalcommits,
-        )
+        if IS_SELF is True:
+            _set_json(
+                file_name='test_json',
+                project_name=data.projectname,
+                key='total_commits',
+                value=totalcommits,
+            )
         for i in range(0, 24):
             if i in hour_of_day:
                 r = 127 + int((float(hour_of_day[i]) / data.activity_by_hour_of_day_busiest) * 128)
@@ -981,11 +989,13 @@ class HTMLReportCreator(ReportCreator):
         # Day of Week
         f.write(html_header(2, 'Day of Week'))
         day_of_week = data.getActivityByDayOfWeek()
-        _set_json(
-            file_name='test_json',
-            key='day_of_week',
-            value=day_of_week,
-        )
+        if IS_SELF is True:
+            _set_json(
+                file_name='test_json',
+                project_name=data.projectname,
+                key='day_of_week',
+                value=day_of_week,
+            )
         f.write('<div class="vtable"><table>')
         f.write('<tr><th>Day</th><th>Total (%)</th></tr>')
         fp = open(path + '/day_of_week.dat', 'w')
@@ -1009,16 +1019,18 @@ class HTMLReportCreator(ReportCreator):
         f.write(html_header(2, 'Hour of Week'))
         f.write('<table>')
 
-        f.write('<tr><th>Weekday</th>')
+        f.write(r'<tr><th>Week\Hour</th>')
         for hour in range(0, 24):
             f.write('<th>%d</th>' % (hour))
         f.write('</tr>')
 
-        _set_json(
-            file_name='test_json',
-            key='activity_by_hour_of_week',
-            value=data.activity_by_hour_of_week,
-        )
+        if IS_SELF is True:
+            _set_json(
+                file_name='test_json',
+                project_name=data.projectname,
+                key='activity_by_hour_of_week',
+                value=data.activity_by_hour_of_week,
+            )
         for weekday in range(0, 7):
             f.write('<tr><th>%s</th>' % (WEEKDAYS[weekday]))
             for hour in range(0, 24):
@@ -1039,11 +1051,13 @@ class HTMLReportCreator(ReportCreator):
 
         # Month of Year
         f.write(html_header(2, 'Month of Year'))
-        _set_json(
-            file_name='test_json',
-            key='activity_by_month_of_year',
-            value=data.activity_by_month_of_year,
-        )
+        if IS_SELF is True:
+            _set_json(
+                file_name='test_json',
+                project_name=data.projectname,
+                key='activity_by_month_of_year',
+                value=data.activity_by_month_of_year,
+            )
         f.write('<div class="vtable"><table>')
         f.write('<tr><th>Month</th><th>Commits (%)</th></tr>')
         fp = open(path + '/month_of_year.dat', 'w')
@@ -1060,11 +1074,25 @@ class HTMLReportCreator(ReportCreator):
 
         # Commits by year/month
         f.write(html_header(2, 'Commits by year/month'))
-        _set_json(
-            file_name='test_json',
-            key='commits_by_month',
-            value=data.commits_by_month,
-        )
+        if IS_SELF is True:
+            _set_json(
+                file_name='test_json',
+                project_name=data.projectname,
+                key='commits_by_month',
+                value=data.commits_by_month,
+            )
+            _set_json(
+                file_name='test_json',
+                project_name=data.projectname,
+                key='lines_added_by_month',
+                value=data.lines_added_by_month,
+            )
+            _set_json(
+                file_name='test_json',
+                project_name=data.projectname,
+                key='lines_removed_by_month',
+                value=data.lines_removed_by_month,
+            )
         f.write(
             '<div class="vtable"><table><tr><th>Month</th><th>Commits</th><th>Lines added</th><th>Lines removed</th></tr>')
         for yymm in reversed(sorted(data.commits_by_month.keys())):
@@ -1080,11 +1108,25 @@ class HTMLReportCreator(ReportCreator):
 
         # Commits by year
         f.write(html_header(2, 'Commits by Year'))
-        _set_json(
-            file_name='test_json',
-            key='commits_by_year',
-            value=data.commits_by_year,
-        )
+        if IS_SELF is True:
+            _set_json(
+                file_name='test_json',
+                project_name=data.projectname,
+                key='commits_by_year',
+                value=data.commits_by_year,
+            )
+            _set_json(
+                file_name='test_json',
+                project_name=data.projectname,
+                key='lines_added_by_year',
+                value=data.lines_added_by_year,
+            )
+            _set_json(
+                file_name='test_json',
+                project_name=data.projectname,
+                key='lines_removed_by_year',
+                value=data.lines_removed_by_year,
+            )
         f.write(
             '<div class="vtable"><table><tr><th>Year</th><th>Commits (% of all)</th><th>Lines added</th><th>Lines removed</th></tr>')
         for yy in reversed(sorted(data.commits_by_year.keys())):
@@ -1099,24 +1141,19 @@ class HTMLReportCreator(ReportCreator):
         fg.close()
 
         # Commits by timezone
-        f.write(html_header(2, 'Commits by Timezone'))
-        _set_json(
-            file_name='test_json',
-            key='commits_by_timezone',
-            value=data.commits_by_timezone,
-        )
-        f.write('<table><tr>')
-        f.write('<th>Timezone</th><th>Commits</th>')
-        f.write('</tr>')
-        max_commits_on_tz = max(data.commits_by_timezone.values())
-        for i in sorted(data.commits_by_timezone.keys(), key=lambda n: int(n)):
-            commits = data.commits_by_timezone[i]
-            r = 127 + int((float(commits) / max_commits_on_tz) * 128)
-            f.write('<tr><th>%s</th><td style="background-color: rgb(%d, 0, 0)">%d</td></tr>' % (i, r, commits))
-        f.write('</table>')
-
-        f.write('</body></html>')
-        f.close()
+        # f.write(html_header(2, 'Commits by Timezone'))
+        # f.write('<table><tr>')
+        # f.write('<th>Timezone</th><th>Commits</th>')
+        # f.write('</tr>')
+        # max_commits_on_tz = max(data.commits_by_timezone.values())
+        # for i in sorted(data.commits_by_timezone.keys(), key=lambda n: int(n)):
+        #     commits = data.commits_by_timezone[i]
+        #     r = 127 + int((float(commits) / max_commits_on_tz) * 128)
+        #     f.write('<tr><th>%s</th><td style="background-color: rgb(%d, 0, 0)">%d</td></tr>' % (i, r, commits))
+        # f.write('</table>')
+        #
+        # f.write('</body></html>')
+        # f.close()
 
         ###
         # Authors
@@ -1134,11 +1171,13 @@ class HTMLReportCreator(ReportCreator):
             info['active_days'] = list(info['active_days'])
             info['timedelta'] = str(info['timedelta'])
             temp_dict[x] = info
-        _set_json(
-            file_name='test_json',
-            key='author_info',
-            value=temp_dict,
-        )
+        if IS_SELF is True:
+            _set_json(
+                file_name='test_json',
+                project_name=data.projectname,
+                key='author_info',
+                value=temp_dict,
+            )
 
         f.write('<table class="authors sortable" id="authors">')
         f.write(
@@ -1181,6 +1220,13 @@ class HTMLReportCreator(ReportCreator):
         # time. Be robust and keep the list in a variable.
         commits_by_authors = {}  # cumulated added lines by
 
+        if IS_SELF is True:
+            _set_json(
+                file_name='test_json',
+                project_name=data.projectname,
+                key='changes_by_date_by_author',
+                value=data.changes_by_date_by_author,
+            )
         self.authors_to_plot = data.getAuthors(conf['max_authors'])
         for author in self.authors_to_plot:
             lines_by_authors[author] = 0
@@ -1201,11 +1247,13 @@ class HTMLReportCreator(ReportCreator):
 
         # Authors :: Author of Month
         f.write(html_header(2, 'Author of Month'))
-        _set_json(
-            file_name='test_json',
-            key='author_of_month',
-            value=data.author_of_month,
-        )
+        if IS_SELF is False:
+            _set_json(
+                file_name='test_json',
+                project_name=data.projectname,
+                key='author_of_month',
+                value=data.author_of_month,
+            )
         f.write('<table class="sortable" id="aom">')
         f.write(
             '<tr><th>Month</th><th>Author</th><th>Commits (%%)</th><th class="unsortable">Next top %d</th><th>Number of authors</th></tr>' %
@@ -1223,11 +1271,13 @@ class HTMLReportCreator(ReportCreator):
         f.write('</table>')
 
         f.write(html_header(2, 'Author of Year'))
-        _set_json(
-            file_name='test_json',
-            key='author_of_year',
-            value=data.author_of_year,
-        )
+        if IS_SELF is False:
+            _set_json(
+                file_name='test_json',
+                project_name=data.projectname,
+                key='author_of_year',
+                value=data.author_of_year,
+            )
         f.write(
             '<table class="sortable" id="aoy"><tr><th>Year</th><th>Author</th><th>Commits (%%)</th><th class="unsortable">Next top %d</th><th>Number of authors</th></tr>' %
             conf['authors_top'])
@@ -1246,11 +1296,6 @@ class HTMLReportCreator(ReportCreator):
         # f.write(html_header(2, 'Commits by Domains'))
         # domains_by_commits = getkeyssortedbyvaluekey(data.domains, 'commits')
         # domains_by_commits.reverse()  # most first
-        # _set_json(
-        #     file_name='test_json',
-        #     key='domains_by_commits',
-        #     value=domains_by_commits,
-        # )
         # f.write('<div class="vtable"><table>')
         # f.write('<tr><th>Domains</th><th>Total (%)</th></tr>')
         # fp = open(path + '/domains.dat', 'w')
@@ -1288,29 +1333,35 @@ class HTMLReportCreator(ReportCreator):
             pass
         f.write('</dl>\n')
 
-        _set_json(
-            file_name='test_json',
-            key='Total_files',
-            value=data.getTotalFiles(),
-        )
-        _set_json(
-            file_name='test_json',
-            key='Total_lines',
-            value=data.getTotalLOC(),
-        )
-        _set_json(
-            file_name='test_json',
-            key='Average_file_size',
-            value=float(data.getTotalSize()) / data.getTotalFiles(),
-        )
+        if IS_SELF is True:
+            _set_json(
+                file_name='test_json',
+                project_name=data.projectname,
+                key='Total_files',
+                value=data.getTotalFiles(),
+            )
+            _set_json(
+                file_name='test_json',
+                project_name=data.projectname,
+                key='Total_lines',
+                value=data.getTotalLOC(),
+            )
+            _set_json(
+                file_name='test_json',
+                project_name=data.projectname,
+                key='Average_file_size',
+                value=float(data.getTotalSize()) / data.getTotalFiles(),
+            )
 
         # Files :: File count by date
         f.write(html_header(2, 'File count by date'))
-        _set_json(
-            file_name='test_json',
-            key='files_by_stamp',
-            value=data.files_by_stamp,
-        )
+        if IS_SELF is True:
+            _set_json(
+                file_name='test_json',
+                project_name=data.projectname,
+                key='files_by_stamp',
+                value=data.files_by_stamp,
+            )
 
         # use set to get rid of duplicate/unnecessary entries
         files_by_date = set()
@@ -1331,11 +1382,13 @@ class HTMLReportCreator(ReportCreator):
 
         # Files :: Extensions
         f.write(html_header(2, 'Extensions'))
-        _set_json(
-            file_name='test_json',
-            key='extensions',
-            value=data.extensions,
-        )
+        if IS_SELF is True:
+            _set_json(
+                file_name='test_json',
+                project_name=data.projectname,
+                key='extensions',
+                value=data.extensions,
+            )
         f.write(
             '<table class="sortable" id="ext"><tr><th>Extension</th><th>Files (%)</th><th>Lines (%)</th><th>Lines/file</th></tr>')
         for ext in sorted(data.extensions.keys()):
@@ -1366,11 +1419,13 @@ class HTMLReportCreator(ReportCreator):
         f.write(html_header(2, 'Lines of Code'))
         f.write('<img src="lines_of_code.png" alt="Lines of Code">')
 
-        _set_json(
-            file_name='test_json',
-            key='changes_by_date',
-            value=data.changes_by_date,
-        )
+        if IS_SELF is True:
+            _set_json(
+                file_name='test_json',
+                project_name=data.projectname,
+                key='changes_by_date',
+                value=data.changes_by_date,
+            )
         fg = open(path + '/lines_of_code.dat', 'w')
         for stamp in sorted(data.changes_by_date.keys()):
             fg.write('%d %d\n' % (stamp, data.changes_by_date[stamp]['lines']))
@@ -1575,7 +1630,7 @@ class HTMLReportCreator(ReportCreator):
             i = i + 1
             author = a.replace("\"", "\\\"").replace("`", "")
             author = _check_author(author)
-            if IS_ME is True and author != 'XieZhenHeng':
+            if IS_SELF is True and author != 'XieZhenHeng':
                 continue
             plots.append("""'lines_of_code_by_author.dat' using 1:%d title "%s" w lines lw 2""" % (i, author))
         f.write(", ".join(plots))
@@ -1607,7 +1662,7 @@ class HTMLReportCreator(ReportCreator):
             i = i + 1
             author = a.replace("\"", "\\\"").replace("`", "")
             author = _check_author(author)
-            if IS_ME is True and author != 'XieZhenHeng':
+            if IS_SELF is True and author != 'XieZhenHeng':
                 continue
             plots.append("""'commits_by_author.dat' using 1:%d title "%s" w lines lw 2""" % (i, author))
         f.write(", ".join(plots))
@@ -1665,7 +1720,7 @@ Please see the manual page for more details.
 """ % conf)
 
 
-IS_ME = False
+IS_SELF = False
 
 
 class GitStats:
@@ -1687,8 +1742,8 @@ class GitStats:
         if len(args) < 3:
             usage()
             sys.exit(0)
-        global IS_ME
-        IS_ME = True if args[-1] == '1' else False
+        global IS_SELF
+        IS_SELF = True if args[-1] == '1' else False
         outputpath = os.path.abspath(args[-2])
         rundir = os.getcwd()
         if os.path.exists(outputpath):
@@ -1762,71 +1817,9 @@ def _check_author(author):
 SUMMARY_PATH = r'D:\#个人\workspace\git_total\summary'
 
 
-def _general_html(**kwargs):
-    projectname = kwargs['projectname']
-    content = kwargs['content']
-
-    if projectname == 'SMAIServ':
-        cn_name = '患者数据服务'
-    elif projectname == 'SMAIDataSearch':
-        cn_name = '数据快速搜索服务'
-    elif projectname == 'SMAIToolBoxPY3':
-        cn_name = '工具箱PY3服务'
-    elif projectname == 'SMAIExport':
-        cn_name = '数据导出服务'
-    elif projectname == 'SMAIDataServ':
-        cn_name = '新版本数据服务'
-    elif projectname == 'SMAIFormDc':
-        cn_name = '表单数据服务'
-    elif projectname == 'SMAIImage':
-        cn_name = '影像科研服务'
-    elif projectname == 'SMAIModelPre':
-        cn_name = '模型管理与预测服务'
-    elif projectname == 'SMAIModels':
-        cn_name = '新模型服务'
-    elif projectname == 'SMAIALog':
-        cn_name = '审计日志服务'
-    elif projectname == 'SMAIFiles':
-        cn_name = '文件管理服务'
-    elif projectname == 'SMAI4Annet':
-        cn_name = 'annet定制接口服务'
-    elif projectname == 'SMAIFormManage':
-        cn_name = '表单管理(新)服务'
-    elif projectname == 'SMAIUAC':
-        cn_name = '用户与权限控制服务'
-    elif projectname == 'SMAIFdef':
-        cn_name = '字段模版管理服务'
-    elif projectname == 'SMAIFollow':
-        cn_name = '患者随访服务'
-    elif projectname == 'SMAINotify':
-        cn_name = '短信或其它通知服务'
-    elif projectname == 'SMAIRDMgmt':
-        cn_name = '科研管理服务'
-    elif projectname == 'SMAIGcpServ':
-        cn_name = '临床实验服务'
-    elif projectname == 'SMAIMultiCenter':
-        cn_name = '多中心服务'
-    elif projectname == 'SMAISurvey':
-        cn_name = '调查问卷(深圳三院)'
-    elif projectname == 'SMAITriaManage':
-        cn_name = '分诊管理后端接口服务'
-    elif projectname == 'SZSYInterfaceApi':
-        cn_name = '开放接口(深圳三院)'
-    else:
-        raise Exception('projectname=[{}] 异常值'.format(projectname))
-
-    html_str = r'<details><summary>{en_name} ({cn_name})</summary><div style="text-indent:2em">{content}</div></details>'.format(
-        en_name=projectname,
-        cn_name=cn_name,
-        content=content,
-    )
-
-    with open(r'{}/index_html.txt'.format(SUMMARY_PATH), 'a+', encoding='utf-8') as _f:
-        _f.write(html_str)
-
-
 def _set_json(**kwargs):
     file_name = kwargs['file_name']
+    project_name = kwargs['project_name']
     file_path = r'{}\{}.json'.format(SUMMARY_PATH, file_name)
     try:
         with open(file_path, 'r', encoding='utf-8') as _f:
@@ -1836,7 +1829,9 @@ def _set_json(**kwargs):
     if file_name == 'test_json':
         key = kwargs['key']
         value = kwargs['value']
-        json_load[key] = value
+        if not json_load.get(project_name):
+            json_load[project_name] = {}
+        json_load[project_name].update({key: value})
 
     with open(file_path, 'w', encoding='utf-8') as _f:
         _f.write(json.dumps(json_load))
