@@ -1,4 +1,6 @@
 import random
+import sys
+import getopt
 
 
 def test_20240612152929():
@@ -108,6 +110,39 @@ def test_20240614094342():
     print(make_incrementor('42')('1'))
 
 
+def test_20240621150649():
+    print('{:,}'.format(123456789))
+    a = 5.0
+    b = 44
+    str_len = 5
+    print('{}% of {}'.format(
+        '{:.2f}'.format(a).zfill(str_len),
+        b
+    ))
+    print('{:0>{}.2f}% of {}'.format(a, str_len, b))
+    print(f'{a:0>{str_len}.2f}% of {b}')
+    print('负数长度变化' + '=' * 50)
+    a = -a
+    str_len = 6
+    print(f'{a:0>{str_len}.2f}% of {b}')
+    print('{}% of {}'.format(
+        '{:.2f}'.format(a).zfill(str_len),
+        b
+    ))
+
+
+def test_20240621164041():
+    from collections import Counter
+    some_data = ["a", "2", 2, 4, 5, "2", "b", 4, 7, "a", 5, "d", "z", "a"]
+    print(Counter(some_data))
+
+
+def test_20240621164422(args_orig):
+    optlist, args = getopt.getopt(args_orig, 'hc:', ["help"])
+    print(optlist)
+    print(args)
+
+
 if __name__ == '__main__':
     pass
-    test_20240614094342()
+    test_20240621164422(sys.argv[1:])

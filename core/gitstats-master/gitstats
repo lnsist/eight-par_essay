@@ -1814,7 +1814,7 @@ def _check_author(author):
     return author
 
 
-SUMMARY_PATH = r'D:\#个人\workspace\git_total\summary'
+SUMMARY_PATH = r'D:\#个人\workspace\eight-par_essay\files\git_total\summary'
 
 
 def _set_json(**kwargs):

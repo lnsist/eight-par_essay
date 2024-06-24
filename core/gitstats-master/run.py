@@ -270,7 +270,8 @@ def _get_json():
                         _element['obj'][_key]['other'] += _i_value
 
     by_commits_sort = [x['en_name'] for x in sorted(by_commits_sort, key=lambda s: s['commits'], reverse=True)]
-
+    logging.info(by_commits_sort)
+    logging.info(project_dict)
     for pl_element in PROJECT_LIST:
         pl_en_name = pl_element['en_name']
         project_dict[pl_en_name]['by_commits'] = by_commits_sort.index(pl_en_name) + 1
